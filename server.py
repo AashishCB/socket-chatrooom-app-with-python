@@ -43,7 +43,7 @@ def receive_message(client_socket):
 		return {"header": message_header, "data": client_socket.recv(message_length)}
 		#  message_header containing size of message, data receving value at once depending on message length
 		# here we are not controlling the message receiving part by part,
-		# hopoing no one is going to send message of very large size.
+		# hoping no one is going to send message of very large size.
 	except:
 		# only reaches here if somone broke their script
 		return False
@@ -53,11 +53,17 @@ while True:
 	# we only care about read_sockets
 	# select.select takes three parameters
 	# first is readlist, second is write list and then error list
+	# Python’s select() function is a direct interface to the underlying operating system implementation. 
+	# It monitors sockets, open files, and pipes (anything with a fileno() method 
+	# that returns a valid file descriptor) until they become readable or writable, 
+	# or a communication error occurs.
+	# select() makes it easier to monitor multiple connections at the same time,
+	# and is more efficient than writing a polling loop in Python using socket timeouts,
+	# because the monitoring happens in the operating system network layer, instead of the interpreter.
 	for notified_socket in read_sockets:
 		if notified_socket == server_socket:
 		# it means someone just connected and we need to accept the connection and handle for it.
 			client_socket, client_address = server_socket.accept()
-
 			user = receive_message(client_socket)
 			if user is False:
 			# someone just disconnected, so we will continue
@@ -71,18 +77,17 @@ while True:
 
 		else:
 			message = receive_message(notified_socket)
-
+			# message is receives 'False' on closed connection
 			if message is False:
-				print(f"Closed connection ffrom {clients[notified_socket]['data'].decode('utf-8')}")
+				print(f"Closed connection from {clients[notified_socket]['data'].decode('utf-8')}")
 				sockets_list.remove(notified_socket)
 				del clients[notified_socket]
 				continue
-
 			user = clients[notified_socket]
 			print(f"Received message from {user['data'].decode('utf-8')}: {message['data'].decode('utf-8')}")
 
 			for clients_socket in clients:
-				if clients_socket != clients:
+				if clients_socket != notified_socket:
 					clients_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
 
 	for notified_socket in exception_sockets:
